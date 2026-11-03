@@ -1,9 +1,12 @@
+import logging
 import time
 
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+logger = logging.getLogger(__name__)
 
 
 def _build_session():
@@ -59,13 +62,25 @@ class ExtractAPI:
         return pd.DataFrame(all_rows)
 
     def get_weather_data(self, url, params):
-        for attempt in range(3):
-            response = self._request(url, params)
+        attempts = 3
+        for attempt in range(1, attempts + 1):
             try:
+                response = self._request(url, params, timeout=(5, 120))
                 return response.json()
-            except requests.exceptions.JSONDecodeError as exc:
-                if attempt == 2:
-                    raise RuntimeError(
-                        "Weather API returned invalid JSON after 3 attempts"
-                    ) from exc
-                time.sleep(2**attempt)
+            except (
+                requests.exceptions.RequestException,
+                requests.exceptions.JSONDecodeError,
+            ) as exc:
+                if attempt == attempts:
+                    if isinstance(exc, requests.exceptions.JSONDecodeError):
+                        raise RuntimeError(
+                            f"Weather API returned invalid JSON after {attempts} attempts"
+                        ) from exc
+                    raise
+                logger.warning(
+                    "Weather API request failed (attempt %d/%d): %s",
+                    attempt,
+                    attempts,
+                    exc,
+                )
+                time.sleep(2 ** (attempt - 1))

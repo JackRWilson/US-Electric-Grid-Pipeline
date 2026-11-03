@@ -384,7 +384,7 @@ class ExtractWeather(ExtractAPI):
         "wind_speed_180m",
         "wind_speed_120m",
     )
-    LOCATION_BATCH = 50
+    LOCATION_BATCH = 20
     TIME_CHUNK = timedelta(days=14)
     SLEEP = 6
 
