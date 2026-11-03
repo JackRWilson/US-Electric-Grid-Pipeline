@@ -510,3 +510,27 @@ PLOTLY_LAYOUT_STYLE = {
     "autosize": True,
     "legend": {"font": PLOTLY_FONT},
 }
+
+# --------------------------------------------------
+# Loading screen
+DASH_LOADING_CONTAINER_STYLE = {
+    "minHeight": "100vh",
+    "display": "grid",
+    "alignContent": "center",
+    "textAlign": "center",
+    "padding": "24px",
+    "backgroundColor": COLORS["page"],
+    "fontFamily": FONTS["ui"],
+}
+
+DASH_LOADING_HEADER_STYLE = {
+    "margin": "0 0 12px",
+    "color": COLORS["text_muted"],
+    "fontFamily": FONTS["mono"],
+}
+
+DASH_LOADING_STYLE = {
+    "maxWidth": "560px",
+    "margin": "0 auto",
+    "color": COLORS["text_muted"],
+}
