@@ -18,6 +18,7 @@ from etl import ETLPaths, ETLProcessor
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
     catchup=False,
     max_active_runs=1,
+    is_paused_upon_creation=False,
     template_searchpath=["/opt/airflow/db"],
     tags=["electricity", "etl"],
 )

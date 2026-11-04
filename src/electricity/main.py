@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from dynaconf import Dynaconf
+from dotenv import load_dotenv
 from etl import ETLPaths, ETLProcessor
 from sqlalchemy import create_engine
 
@@ -8,6 +9,7 @@ DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
 def run():
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
     paths = ETLPaths(
         plant_data_path=DATA_DIR / "2___Plant_Y2025.xlsx",

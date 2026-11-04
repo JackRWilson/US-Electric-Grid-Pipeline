@@ -7,7 +7,7 @@ into a PostgreSQL database, and visualizes the results in an interactive dashboa
 
 ![Dashboard screenshot](docs/dashboard.png)
 
-> ### This is an overview. A full written report can be found [here](docs/report.md).
+> ### This is an overview. View the [written report](docs/report.md) for analysis.
 
 ---
 
@@ -35,40 +35,41 @@ into a PostgreSQL database, and visualizes the results in an interactive dashboa
 ---
 
 ## Project Structure
-```bash
+<pre>
 .
 ├─ airflow/
 │  ├─ requirements.txt
 │  └─ ...
 ├─ app/
 │  ├─ assets/
-│  ├─ main.py # Run app
-│  ├─ requirements.txt # Install for app
+│  ├─ main.py <span style="color: #6a737d;"># Run app</span>
+│  ├─ requirements.txt <span style="color: #6a737d;"># Install for app</span>
 │  └─ ...
 ├─ dags/
 │  └─ electricity_etl_dag.py
-├─ data/ # Static data here
-│  ├─ 2020_Gaz_counties_national.txt
-│  ├─ Balancing_Authority_2025.xlsx
-│  └─ out_eia861__yearly_balancing_authority_service_territory.parquet
+├─ data/ <span style="color: #6a737d;"># Static data for manual setup</span>
 ├─ db/
 │  ├─ electricity_erd.png
-│  ├─ electricity_schema.sql # Run database schema
+│  ├─ electricity_schema.sql <span style="color: #6a737d;"># Run database schema</span>
 │  └─ ...
 ├─ docs/
 │  ├─ plan.md
-│  ├─ report.md # Report
+│  ├─ report.md <span style="color: #6a737d;"># Report</span>
 │  └─ ...
+├─ scripts/
+│  └─ download_static.py
 ├─ src/
 │  └─ electricity/
-│     ├─ main.py # Run pipeline
+│     ├─ main.py <span style="color: #6a737d;"># Run pipeline</span>
 │     └─ ...
 ├─ .env.example
 ├─ .gitignore
 ├─ compose.yaml
-├─ README.md # You are HERE
-└─ requirements.txt # Install for pipeline
-```
+├─ README.md <b><span style="color: #22863a;"># You are HERE</span></b>
+├─ start.py <span style="color: #22863a;"># Start/stop the container stack</span>
+└─ requirements.txt <span style="color: #6a737d;"># Install for pipeline</span>
+</pre>
+
 
 ---
 
@@ -76,130 +77,142 @@ into a PostgreSQL database, and visualizes the results in an interactive dashboa
 
 ### Prerequisites
 
-- Python
-- Free [EIA API Key](https://www.eia.gov/opendata/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (optional, Airflow Route)
-- SQL Client like [DBeaver](https://dbeaver.io/download/) (optional, viewing tables)
+- Python 3.11 or newer for the launcher
+- Free [EIA API key](https://www.eia.gov/opendata/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) with Docker Compose (recommended)
+- SQL client such as [DBeaver](https://dbeaver.io/download/) (optional)
 
-### 1. Download static data
+### Quick start
 
-Download the files below and place them in the `data/` folder.
+1. Start Docker Desktop and open a terminal in the repository folder.
 
-| File | Status | Source | Notes |
-| ----- | :-----: | :-----: | -----: |
-| `2___Plant_Y2025.xlsx`| Required | [link](https://www.eia.gov/electricity/data/eia860/xls/eia8602025.zip) | Only pull `2___Plant_Y2025.xlsx` from the zip |
-| `CAINC1_ALL_AREAS_1969_2024.csv` | Required | [link](https://apps.bea.gov/regional/zip/CAINC1.zip) | Only pull `CAINC1_ALL_AREAS_1969_2024.csv` from the zip |
-| `sub-est2025.csv` | Required | [link](https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/sub-est2025.csv)| |
-| `2020_Gaz_counties_national.txt` | Only if missing | [link](https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2020_Gazetteer/2020_Gaz_counties_national.zip) | |
-| `Balancing_Authority_2025.xlsx` | Only if missing | [link](https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip) | Only pull `Balancing_Authority_2025.xlsx` from the zip |
-| `out_eia861__yearly_balancing_authority_service_territory.parquet` | Only if missing | [link](https://s3.us-west-2.amazonaws.com/pudl.catalyst.coop/nightly/out_eia861__yearly_balancing_authority_service_territory.parquet) | |
+2. Run the launcher:
 
-### 2. Configure environment variables
+   ```powershell
+   python start.py
+   ```
 
-Copy `.env.example` to `.env` and fill in your values.
+3. If prompted, add your EIA API key to `.env` and run `python start.py` again.
 
-```yaml
-EIA_API_KEY=eia_api_key # Required 
-DB_HOST=localhost
-DB_PORT=5433
-DB_USER=your_username # Required 
-DB_PASSWORD=your_password # Required 
-DB_DATABASE=your_db # Required 
-DB_SCHEMA=electricity 
-DB_ENGINE_URL=postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_DATABASE}?options=-c%20search_path=${DB_SCHEMA}
-EIA_INITIAL_START=2026-07-17 # Optional (delete)
-WEATHER_INITIAL_START=2026-07-17 # Optional (delete)
+4. If not opened automatically, open:
+   - Dashboard: <http://localhost:8050/>
+   - Airflow: <http://localhost:8080/> (credentials are printed by the launcher)
+
+5. Press Enter in the launcher window to stop the containers.
+
+See [configuration details](#configuration-and-initial-startup) for `.env` options and [managing services](#managing-services) for restarting, troubleshooting, and reset instructions. For running without Docker, see [manual setup](#manual-setup).
+
+### Container setup
+
+#### Configuration details
+
+On the first run, the launcher creates `.env` from `.env.example`. Set `EIA_API_KEY` there and leave other settings as they are.
+
+If EIA is temporarily unavailable, retry later or bypass the check:
+
+```powershell
+python start.py --skip-eia-check
 ```
 
-| Variable | Required | Default | Notes |
-| ----- | :-----: | :-----: | -----: |
-| `EIA_API_KEY` | Yes | | Your [EIA API key](https://www.eia.gov/opendata/) |
-| `DB_USER` | Yes | | Database username |
-| `DB_PASSWORD` | Yes | | Database password |
-| `DB_DATABASE` | Yes | | Database name (postgres) |
-| `EIA_INITIAL_START` | No | 90 days | Start of initial EIA backfill window in in `YYYY-MM-DD` format. |
-| `WEATHER_INITIAL_START` | No | 90 days | Start of initial weather backfill window in in `YYYY-MM-DD` format. |
+**Never commit `.env`. Default database credentials are for local use only.**
 
-> Remove the two `*_INITIAL_START` lines to use the 90-day defaults.
+*(Optional) `EIA_INITIAL_START` and `WEATHER_INITIAL_START` set the initial backfill dates in `YYYY-MM-DD` format, otherwise the ETL uses the most recent 90 days.*
 
-> Never commit your `.env` file. Make sure it's in `.gitignore`.
+On first startup Docker builds the images and downloads static files into a persistent volume. Airflow runs the ETL hourly. The initial load can take about **1.5 hours**.
 
-### 3. Run the pipeline
+#### Managing services
 
-Choose **one** of the two options.
+If running the launcher without an interactive terminal, stop the stack from the
+repository root with:
 
-#### Option A: Airflow (Docker)
-1. Open Docker Desktop and navigate to the project directory.
+```powershell
+docker compose stop
+```
 
-2. Build and start the containers.
+To start the stack directly without the Python launcher, run:
 
 ```powershell
 docker compose up -d --build
 ```
 
-3. Get the generated Airflow username and password.
+Use `docker compose start` and `docker compose stop` for later starts and stops.
+
+Check service status and logs with:
 
 ```powershell
-docker exec -it airflow /bin/bash
+docker compose ps
+docker compose logs -f airflow app data-init
 ```
+
+To retrieve the Airflow credentials again:
 
 ```powershell
-cat simple_auth_manager_passwords.json.generated
+docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated
 ```
 
-4. Open http://localhost:8080/ and login with credentials.
+To browse the database in DBeaver, connect to `localhost` on `DB_PORT` (default `5433`)
+using `DB_USER`, `DB_PASSWORD`, and `DB_DATABASE` from `.env`.
 
-5. Enable `electricity_etl_dag` or trigger manually. 
+The database, downloaded files, Airflow state, and ETL cache persist in Docker volumes.
+Running `python start.py` again resumes existing containers.
 
-> The first run backfills historical data and takes about **1.5 hours**. The DAG will run **hourly** after that.
-
-6. To browse the tables, create a connection in DBeaver using your `DB_USER`, `DB_PASSWORD`, `DB_DATABASE`, and `DB_PORT` 5433.
-
-#### Option B: Manual
-
-1. Open a terminal and navigate to the project directory.
-
-2. Create and activate a virtual environment.
+To rebuild images after code or dependency changes:
 
 ```powershell
-python -m venv .venv
+python start.py --build
 ```
+
+To completely reset the container installation, including the database and downloaded
+static files:
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
+docker compose down --volumes --remove-orphans
 ```
 
-3. Install requirements.
+**This permanently deletes the Docker volumes.** It does not delete `.env` or files in
+the local `data/` folder. Omit `--volumes` if you want to keep pipeline state.
 
-```powershell
-pip install -r requirements.txt
-```
+### Manual setup
 
-4. Create the schema by running `db/electricity_schema.sql` in DBeaver.
+Manual setup runs Python on the host. It requires a running PostgreSQL database,
+the six static data files listed below in `data/`, and a configured `.env`. It does
+not use the Docker downloader or automatically schedule hourly ETL runs.
 
-5. Run pipeline [from file](/src/electricity/main.py) or...
+1. Download these files into the `data/` folder:
 
-```powershell
-python src/electricity/main.py
-```
+   | File | Source | Notes |
+   | ----- | ----- | ----- |
+   | `2___Plant_Y2025.xlsx` | [EIA-860 archive](https://www.eia.gov/electricity/data/eia860/xls/eia8602025.zip) | Extract this from the zip |
+   | `CAINC1__ALL_AREAS_1969_2024.csv` | [BEA archive](https://apps.bea.gov/regional/zip/CAINC1.zip) | Extract this from the zip |
+   | `sub-est2025.csv` | [Census population estimates](https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/sub-est2025.csv) | Download as is |
+   | `2020_Gaz_counties_national.txt` | [Census Gazetteer archive](https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2020_Gazetteer/2020_Gaz_counties_national.zip) | Extract this from the zip |
+   | `Balancing_Authority_2025.xlsx` | [EIA-861 archive](https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip) | Extract this from the zip |
+   | `out_eia861__yearly_balancing_authority_service_territory.parquet` | [PUDL parquet file](https://s3.us-west-2.amazonaws.com/pudl.catalyst.coop/nightly/out_eia861__yearly_balancing_authority_service_territory.parquet) | Download as is |
 
-### 4. Run the dashboard
+2. Create and activate a virtual environment, then install dependencies:
 
-```powershell
-cd app
-```
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   pip install -r app/requirements.txt
+   ```
 
-```powershell
-pip install -r requirements.txt
-```
+3. Copy `.env.example` to `.env`, enter your EIA API key, and set the `DB_*` values to match your local PostgreSQL database. Update `DB_ENGINE_URL` if your connection differs.
 
-[Run from file](/app/main.py) or...
+4. Run `db/electricity_schema.sql` using DBeaver or another SQL client. Then run the ETL:
 
-```powershell
-python main.py
-```
+   ```powershell
+   python src/electricity/main.py
+   ```
 
-Then open <http://127.0.0.1:8050/>.
+5. In another terminal with the virtual environment activated, run the dashboard:
+
+   ```powershell
+   python app/main.py
+   ```
+
+   Open <http://localhost:8050/>. To refresh the data, run the ETL again as needed.
 
 ---
 
@@ -219,6 +232,10 @@ Then open <http://127.0.0.1:8050/>.
 
 ## Troubleshooting
  
-- **Airflow login fails:** re-run the `cat simple_auth_manager_passwords.json.generated` step. Credentials get regenerated when the container is rebuilt.
+- **Airflow login fails:** run `docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated` to view the generated credentials again.
 - **Cannot connect to the database:** confirm `DB_PORT` is `5433` and that the database container is running.
-- **Missing file errors on first run:** check that every "Required" file in `data/` matches the exact file name in the table above.
+- **Missing file errors on first run:** check the `data-init` container logs with `docker compose logs data-init`. It downloads the required static files into a persistent volume.
+- **Dashboard still shows its waiting page:** check `docker compose ps` and `docker compose logs -f airflow db`. The waiting page disappears after the initial ETL run has written the `static` watermark.
+- **EIA key check fails:** verify `EIA_API_KEY` in `.env`. If EIA is unreachable rather than rejecting the key, use `python start.py --skip-eia-check` to continue.
+- **Docker services do not start:** make sure Docker Desktop is running, then inspect `docker compose logs`.
+- **Airflow pipeline fails:** this happens if the computer is shut off. Restart the containers with `docker compose restart`.

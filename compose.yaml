@@ -1,13 +1,12 @@
 services:
   db:
     build: ./db
-    hostname: db
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_DATABASE}
     ports:
-      - ${DB_PORT}:5432
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -15,17 +14,28 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
+    restart: unless-stopped
+
+  data-init:
+    image: python:3.12-slim
+    command: python /download_static.py
+    volumes:
+      - ./scripts/download_static.py:/download_static.py:ro
+      - static_data:/data
+    restart: "no"
+
   airflow:
     build: ./airflow
     image: electricity-airflow:latest
-    container_name: airflow
-    hostname: airflow
     depends_on:
       db:
         condition: service_healthy
+      data-init:
+        condition: service_completed_successfully
     environment:
-      EIA_API_KEY: ${EIA_API_KEY}
+      EIA_API_KEY: ${EIA_API_KEY:?Set EIA_API_KEY in .env}
       AIRFLOW_CONN_ELECTRICITY_PG: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_DATABASE}
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       EIA_INITIAL_START: ${EIA_INITIAL_START:-}
       WEATHER_INITIAL_START: ${WEATHER_INITIAL_START:-}
       ELECTRICITY_CACHE_DIR: /opt/airflow/cache
@@ -33,12 +43,29 @@ services:
     ports:
       - 8080:8080
     volumes:
+      - airflow_home:/opt/airflow
       - ./dags:/opt/airflow/dags
       - ./src/electricity:/opt/airflow/src/electricity:ro
-      - ./data:/opt/airflow/data:ro
+      - static_data:/opt/airflow/data:ro
       - ./db:/opt/airflow/db:ro
       - etl_cache:/opt/airflow/cache
+    restart: unless-stopped
+
+  app:
+    build: ./app
+    depends_on:
+      db:
+        condition: service_healthy
+      data-init:
+        condition: service_completed_successfully
+    environment:
+      DB_ENGINE_URL: postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_DATABASE}?options=-c%20search_path=${DB_SCHEMA:-electricity}
+    ports:
+      - "8050:8050"
+    restart: unless-stopped
 
 volumes:
+  airflow_home:
   pgdata:
   etl_cache:
+  static_data:
