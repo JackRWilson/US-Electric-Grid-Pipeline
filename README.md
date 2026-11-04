@@ -5,9 +5,9 @@ A data-driven analysis on U.S. electricity demand and generation, and how weathe
 The project pulls hourly electricity data from the EIA API and weather data from Open-Meteo, combines them with static datasets (population, income, balancing authority information, etc.), loads everything
 into a PostgreSQL database, and visualizes the results in an interactive dashboard. The pipeline is orchestrated with Apache Airflow and runs hourly.
 
-![Dashboard screenshot](docs/dashboard.png)
+**This is an overview.** View the [written report](docs/report.md) for analysis.
 
-> ### This is an overview. View the [written report](docs/report.md) for analysis.
+![Dashboard screenshot](docs/dashboard.png)
 
 ---
 
