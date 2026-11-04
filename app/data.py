@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 
 def build_engine():
     settings = Dynaconf(envvar_prefix="DB", load_dotenv=True, dotenv_override=True)
-    return create_engine(settings.ENGINE_URL, echo=False)
+    return create_engine(settings.ENGINE_URL, echo=False, pool_pre_ping=True)
 
 
 ENGINE = engine = build_engine()

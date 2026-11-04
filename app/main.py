@@ -1,5 +1,4 @@
 import logging
-from urllib.parse import quote
 
 from dash import Input, Output, State, dcc, html, no_update
 from sqlalchemy import text
@@ -49,8 +48,8 @@ def latest_etl_completion():
                 )
             ).scalar_one_or_none()
         return completed.isoformat() if completed is not None else None
-    except SQLAlchemyError as error:
-        logger.info("Could not check the latest ETL completion: %s", error)
+    except SQLAlchemyError:
+        logger.exception("Could not check the latest ETL completion")
         return None
 
 
@@ -75,8 +74,9 @@ def dashboard_layout():
         return loading_layout()
     return html.Div(
         [
-            dcc.Location(id="etl-refresh-location", refresh=True),
             dcc.Store(id="etl-last-completion", data=latest_etl_completion()),
+            dcc.Store(id="etl-latest-completion"),
+            html.Div(id="etl-reload-trigger", hidden=True),
             dcc.Interval(
                 id="etl-refresh-poll",
                 interval=ETL_REFRESH_POLL_INTERVAL,
@@ -100,15 +100,26 @@ def refresh_when_ready(_interval):
 
 
 @app.callback(
-    Output("etl-refresh-location", "href"),
+    Output("etl-latest-completion", "data"),
     Input("etl-refresh-poll", "n_intervals"),
+)
+def poll_etl_completion(_interval):
+    return latest_etl_completion()
+
+
+app.clientside_callback(
+    """
+    function(latest, previous) {
+        if (latest && latest !== previous) {
+            window.location.reload();
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("etl-reload-trigger", "children"),
+    Input("etl-latest-completion", "data"),
     State("etl-last-completion", "data"),
 )
-def refresh_after_etl(_interval, previous_completion):
-    completion = latest_etl_completion()
-    if completion is not None and completion != previous_completion:
-        return f"/?etl_updated={quote(completion, safe='')}"
-    return no_update
 
 
 if __name__ == "__main__":
