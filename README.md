@@ -35,41 +35,41 @@ into a PostgreSQL database, and visualizes the results in an interactive dashboa
 ---
 
 ## Project Structure
-<pre>
+
+```text
 .
 ├─ airflow/
 │  ├─ requirements.txt
 │  └─ ...
 ├─ app/
 │  ├─ assets/
-│  ├─ main.py <span style="color: #6a737d;"># Run app</span>
-│  ├─ requirements.txt <span style="color: #6a737d;"># Install for app</span>
+│  ├─ main.py # Run app
+│  ├─ requirements.txt # Install for app
 │  └─ ...
 ├─ dags/
 │  └─ electricity_etl_dag.py
-├─ data/ <span style="color: #6a737d;"># Static data for manual setup</span>
+├─ data/ # Static data for manual setup
 ├─ db/
 │  ├─ electricity_erd.png
-│  ├─ electricity_schema.sql <span style="color: #6a737d;"># Run database schema</span>
+│  ├─ electricity_schema.sql # Run database schema
 │  └─ ...
 ├─ docs/
 │  ├─ plan.md
-│  ├─ report.md <span style="color: #6a737d;"># Report</span>
+│  ├─ report.md # Report
 │  └─ ...
 ├─ scripts/
 │  └─ download_static.py
 ├─ src/
 │  └─ electricity/
-│     ├─ main.py <span style="color: #6a737d;"># Run pipeline</span>
+│     ├─ main.py # Run pipeline
 │     └─ ...
 ├─ .env.example
 ├─ .gitignore
 ├─ compose.yaml
-├─ README.md <b><span style="color: #22863a;"># You are HERE</span></b>
-├─ start.py <span style="color: #22863a;"># Start/stop the container stack</span>
-└─ requirements.txt <span style="color: #6a737d;"># Install for pipeline</span>
-</pre>
-
+├─ README.md # You are HERE
+├─ start.py # Start/stop the container stack
+└─ requirements.txt # Install for pipeline
+```
 
 ---
 
@@ -88,7 +88,7 @@ into a PostgreSQL database, and visualizes the results in an interactive dashboa
 
 2. Run the launcher:
 
-   ```powershell
+   ```bash
    python start.py
    ```
 
@@ -110,7 +110,7 @@ On the first run, the launcher creates `.env` from `.env.example`. Set `EIA_API_
 
 If EIA is temporarily unavailable, retry later or bypass the check:
 
-```powershell
+```bash
 python start.py --skip-eia-check
 ```
 
@@ -125,13 +125,13 @@ On first startup Docker builds the images and downloads static files into a pers
 If running the launcher without an interactive terminal, stop the stack from the
 repository root with:
 
-```powershell
+```bash
 docker compose stop
 ```
 
 To start the stack directly without the Python launcher, run:
 
-```powershell
+```bash
 docker compose up -d --build
 ```
 
@@ -139,14 +139,14 @@ Use `docker compose start` and `docker compose stop` for later starts and stops.
 
 Check service status and logs with:
 
-```powershell
+```bash
 docker compose ps
 docker compose logs -f airflow app data-init
 ```
 
 To retrieve the Airflow credentials again:
 
-```powershell
+```bash
 docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated
 ```
 
@@ -158,14 +158,14 @@ Running `python start.py` again resumes existing containers.
 
 To rebuild images after code or dependency changes:
 
-```powershell
+```bash
 python start.py --build
 ```
 
 To completely reset the container installation, including the database and downloaded
 static files:
 
-```powershell
+```bash
 docker compose down --volumes --remove-orphans
 ```
 
@@ -181,7 +181,7 @@ not use the Docker downloader or automatically schedule hourly ETL runs.
 1. Download these files into the `data/` folder:
 
    | File | Source | Notes |
-   | ----- | ----- | ----- |
+   | ----- | :-----: | :-----: |
    | `2___Plant_Y2025.xlsx` | [EIA-860 archive](https://www.eia.gov/electricity/data/eia860/xls/eia8602025.zip) | Extract this from the zip |
    | `CAINC1__ALL_AREAS_1969_2024.csv` | [BEA archive](https://apps.bea.gov/regional/zip/CAINC1.zip) | Extract this from the zip |
    | `sub-est2025.csv` | [Census population estimates](https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/sub-est2025.csv) | Download as is |
@@ -191,7 +191,7 @@ not use the Docker downloader or automatically schedule hourly ETL runs.
 
 2. Create and activate a virtual environment, then install dependencies:
 
-   ```powershell
+   ```bash
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1
    pip install -r requirements.txt
@@ -202,13 +202,13 @@ not use the Docker downloader or automatically schedule hourly ETL runs.
 
 4. Run `db/electricity_schema.sql` using DBeaver or another SQL client. Then run the ETL:
 
-   ```powershell
+   ```bash
    python src/electricity/main.py
    ```
 
 5. In another terminal with the virtual environment activated, run the dashboard:
 
-   ```powershell
+   ```bash
    python app/main.py
    ```
 
@@ -232,10 +232,16 @@ not use the Docker downloader or automatically schedule hourly ETL runs.
 
 ## Troubleshooting
  
-- **Airflow login fails:** run `docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated` to view the generated credentials again.
-- **Cannot connect to the database:** confirm `DB_PORT` is `5433` and that the database container is running.
-- **Missing file errors on first run:** check the `data-init` container logs with `docker compose logs data-init`. It downloads the required static files into a persistent volume.
-- **Dashboard still shows its waiting page:** check `docker compose ps` and `docker compose logs -f airflow db`. The waiting page disappears after the initial ETL run has written the `static` watermark.
-- **EIA key check fails:** verify `EIA_API_KEY` in `.env`. If EIA is unreachable rather than rejecting the key, use `python start.py --skip-eia-check` to continue.
-- **Docker services do not start:** make sure Docker Desktop is running, then inspect `docker compose logs`.
-- **Airflow pipeline fails:** this happens if the computer is shut off. Restart the containers with `docker compose restart`.
+> **__Airflow login fails:__** run `docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated` to view the generated credentials again.
+
+> **Cannot connect to the database:** confirm `DB_PORT` is `5433` and that the database container is running.
+
+> **Missing file errors on first run:** check the `data-init` container logs with `docker compose logs data-init`. It downloads the required static files into a persistent volume.
+
+> **Dashboard still shows its waiting page:** check `docker compose ps` and `docker compose logs -f airflow db`. The waiting page disappears after the initial ETL run has written the `static` watermark.
+
+> **EIA key check fails:** verify `EIA_API_KEY` in `.env`. If EIA is unreachable rather than rejecting the key, use `python start.py --skip-eia-check` to continue.
+
+> **Docker services do not start:** make sure Docker Desktop is running, then inspect `docker compose logs`.
+
+> **Airflow pipeline fails:** this happens if the computer is shut off. Restart the containers with `docker compose restart`.
