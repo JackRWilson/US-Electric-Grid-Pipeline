@@ -1,4 +1,4 @@
-# U.S. Electricity Demand & Generation Analysis
+# U.S. Electricity Demand & Generation Pipeline & Analysis
 
 A data-driven analysis on U.S. electricity demand and generation, and how weather, geography, population, and income relate to energy use.
 
